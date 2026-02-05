@@ -1,262 +1,141 @@
+
+let renderToken = 0;
+
 function mostrarFiltros() {
-    let option = {
-        method: 'GET',
-        headers: {
-            "Content-Type": "application/json",
-        }
-    }
-    fetch('https://pokeapi.co/api/v2/type', option)
-        .then(res => {
-            if (res.status == 200) {
-                return res.json();
-            } else {
-                throw new Error('no se pudo conectar');
-            }
-        })
+    fetch('https://pokeapi.co/api/v2/type')
+        .then(res => res.json())
         .then(data => {
-            let filter = document.getElementById('filters');
+            const filter = document.getElementById('filters');
+            filter.innerHTML = '';
+            filter.style.overflowY = 'auto';
+            filter.style.maxHeight = '100vh';
+
             data.results.forEach(type => {
-                let divFilter = document.createElement('div');
-                divFilter.classList.add('filter');
-                divFilter.textContent = type.name;
-                filter.appendChild(divFilter);
-                
+                const div = document.createElement('div');
+                div.classList.add('filter');
+                div.textContent = type.name;
+
+                div.addEventListener('click', () => {
+                    document.querySelectorAll('.filter.selected')
+                        .forEach(f => f.classList.remove('selected'));
+
+                    div.classList.add('selected');
+                    filtrarPokemons(type.name);
+                });
+
+                filter.appendChild(div);
             });
         });
 }
 
-async function mostrarPokemon(name) {
-    
-    let option = {
-        method: 'GET',
-        headers: {
-            "Content-Type": "application/json",
-        }
-    }
-    let res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`, option)
-    if (res.status == 200) {
-        let data = await res.json();
-        tarjetaPokemon(data);
-        
-        
-    } else {
-        throw new Error('No se pudo conectar');
-    }
+function filtrarPokemons(type) {
+    fetch(`https://pokeapi.co/api/v2/type/${type}`)
+        .then(res => res.json())
+        .then(data => {
+            const pokemons = data.pokemon.map(p => p.pokemon);
+            mostrarAllPokemons(pokemons);
+        });
+}
+
+
+async function mostrarPokemon(name, token) {
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+    const data = await res.json();
+
+    if (token !== renderToken) return;
+    tarjetaPokemon(data);
 }
 
 async function mostrarAllPokemons(pokemons) {
-    let card = document.getElementById('cards');
-    card.innerHTML = '';
-    for (let i = 0; i < pokemons.length; i++) {
-        await mostrarPokemon(pokemons[i].name);
+    const cards = document.getElementById('cards');
+    cards.innerHTML = '';
+
+    const currentToken = ++renderToken;
+
+    for (const p of pokemons) {
+        if (currentToken !== renderToken) return;
+        await mostrarPokemon(p.name, currentToken);
     }
 }
 
 function tarjetaPokemon(pokemon) {
-    let card = document.getElementById('cards');
-    let div = document.createElement('div');
+    const cards = document.getElementById('cards');
+
+    const div = document.createElement('div');
     div.classList.add('card');
     div.dataset.id = pokemon.id;
-    card.appendChild(div);
 
-    let image = document.createElement('img');
-    image.src = pokemon.sprites.front_default;
-    div.appendChild(image);
+    div.innerHTML = `
+        <img src="${pokemon.sprites.front_default}">
+        <div class="data">
+            <h1>${pokemon.name}</h1>
+            <span>#${pokemon.id.toString().padStart(3, '0')}</span>
+            <h3>Tipo: ${pokemon.types.map(t => t.type.name).join('/')}</h3>
+        </div>
+    `;
 
-    let nombre = document.createElement('div');
-    nombre.classList.add('data');
-    div.appendChild(nombre);
-
-    let h1 = document.createElement('h1');
-    h1.textContent = pokemon.name;
-    nombre.appendChild(h1);
-
-    let numero = document.createElement('div');
-    numero.classList.add('status');
-    nombre.appendChild(numero);
-
-    let number = document.createElement('span');
-    number.classList.add('status_icon');
-    number.textContent = `#${pokemon.id.toString().padStart(3, '0')}`;
-    numero.appendChild(number);
-
-    let tipo = document.createElement('h3');
-    let tipoTexto = '';
-    pokemon.types.forEach((tipos, index) => {
-        if (index > 0) {
-            tipoTexto += '/';
-        }
-        tipoTexto += tipos.type.name;
-    });
-    tipo.textContent = `Tipo: ${tipoTexto}`;
-    nombre.appendChild(tipo);
-    
+    cards.appendChild(div);
 }
+
 
 async function obtenerTodosLosPokemons() {
-    let option = {
-        method: 'GET',
-        headers: {
-            "Content-Type": "application/json",
-        }
-    };
-    let res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1', option);
-    if (res.status == 200) {
-        let data = await res.json();
-        let totalPokemons = data.count;
-        let promises = [];
-        let limit = 50; 
-        for (let offset = 0; offset < totalPokemons; offset += limit) {
-            promises.push(fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`, option).then(res => res.json()));
-        }
-        let results = await Promise.all(promises);
-        let allPokemons = results.flatMap(result => result.results);
-        mostrarAllPokemons(allPokemons);
-    } else {
-        throw new Error('no se pudo conectar');
+    const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1');
+    const data = await res.json();
+
+    const total = data.count;
+    const limit = 50;
+    const requests = [];
+
+    for (let offset = 0; offset < total; offset += limit) {
+        requests.push(
+            fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limit}&offset=${offset}`)
+                .then(res => res.json())
+        );
     }
+
+    const results = await Promise.all(requests);
+    const allPokemons = results.flatMap(r => r.results);
+
+    mostrarAllPokemons(allPokemons);
 }
 
-function detallesPokemon(id){
-    let card = document.querySelectorAll('.card')
-    let modal = document.getElementById('modal')
-    let estadistica = document.getElementById('estadistica');
-   
-    card.forEach(element =>{
-        
-        element.addEventListener('click', function(event){
-            event.preventDefault();
-            modal.classList.remove('hidden')
-            let option = {
-                method: 'GET',
-                headers: {
-                    "Content-Type": "application/json",
-                }
-            }
-            fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}/`, option)
-            .then(res =>{
-                if(res.status == 200){
-                    return res.json();
-                }else{
-                    throw new Error('No se pudo conectar');
-                }
-            })
-            .then(data =>{
-                console.log(data);
-                let descripcion = document.createElement('p');
-                descripcion.classList.add('descripcion')
-                let texto = data.flavor_text_entries.find(text => text.language.name === 'es')
-                if(texto){
-                    descripcion.innerHTML = texto.flavor_text;
-                }
-                estadistica.appendChild(descripcion)
 
-                
-                
-                fetch(`https://pokeapi.co/api/v2/pokemon/${id}`, option)
-                .then(res =>{
-                    if(res.status == 200){
-                        return res.json();
-                    }else{
-                        throw new Error('No se pudo conectar')
-                    }
-                })
-                .then(data2 =>{
-                    console.log(data2);
-                    let foto = document.createElement('img');
-                    foto.src = data2.sprites.front_default;
-                    estadistica.appendChild(foto);
+async function mostrarDetallesPokemon(id) {
+    const modal = document.getElementById('modal');
+    const estadistica = document.getElementById('estadistica');
 
-                    let cuadro = document.createElement('div');
-                    cuadro.classList.add('azul');
-                    estadistica.appendChild(cuadro);
+    estadistica.innerHTML = '';
+    modal.classList.remove('hidden');
 
-                    let altura = document.createElement('h3');
-                    altura.classList.add('altura');
-                    altura.textContent = 'Altura';
-                    cuadro.appendChild(altura);
+    const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`);
+    const species = await speciesRes.json();
 
-                    let altura2 = document.createElement('p');
-                    altura2.classList.add('altura2');
-                    let alturaMetros = (data2.height / 10) + 'm';
-                    altura2.textContent += alturaMetros
-                    cuadro.appendChild(altura2);
+    const texto = species.flavor_text_entries.find(t => t.language.name === 'es');
+    if (texto) {
+        const p = document.createElement('p');
+        p.textContent = texto.flavor_text;
+        estadistica.appendChild(p);
+    }
 
-                    let peso = document.createElement('h3');
-                    peso.classList.add('peso');
-                    peso.textContent = 'Peso';
-                    cuadro.appendChild(peso);
+    const pokeRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+    const poke = await pokeRes.json();
 
-                    let peso2 = document.createElement('p');
-                    peso2.classList.add('peso2');
-                    let pesoKilos = (data2.weight / 10) + 'Kg';
-                    peso2.textContent += pesoKilos;
-                    cuadro.appendChild(peso2);
-
-                    fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}/`, option)
-                    .then(res =>{
-                        if(res.status == 200){
-                            return res.json();
-                        }else{
-                            throw new Error('No se pudo conectar')
-                        }
-                    })
-                    .then(data3 =>{
-                        let categoria = document.createElement('h3');
-                        categoria.classList.add('categoria');
-                        categoria.textContent = 'Categoria';
-                        cuadro.appendChild(categoria);
-
-                        let categoria2 = document.createElement('p');
-                        categoria2.classList.add('categoria2');
-                        let categoriaEs = data3.genera.find(categoria => categoria.language.name == 'es');
-                        categoria2.textContent = categoriaEs.genus;
-                        cuadro.appendChild(categoria2);
-                    })
-                    
-                    fetch(`https://pokeapi.co/api/v2/ability/${id}`, option)
-                    .then(res =>{
-                        if(res.status == 200){
-                            return res.json();
-                        }else{
-                            throw new Error('No se pudo conectar');
-                        }
-                    })
-                    .then(data4 =>{
-                        console.log(data4);
-                        let habilidad = document.createElement('h3');
-                        habilidad.classList.add('habilidad');
-                        habilidad.textContent = 'Habilidad';
-                        cuadro.appendChild(habilidad);
-
-                        let habilidad2 = document.createElement('p');
-                        habilidad2.classList.add('habilidad2');
-                        let habilidadEs = data4.names.find(names => names.language.name == 'es');
-                        habilidad2.textContent = habilidadEs.name;
-                        cuadro.appendChild(habilidad2);
-                    })
-                })
-
-                
-
-            })
-            
-        })
-        
-    })
+    estadistica.innerHTML += `
+        <img src="${poke.sprites.front_default}">
+        <p>Altura: ${poke.height / 10} m</p>
+        <p>Peso: ${poke.weight / 10} kg</p>
+    `;
 }
 
 
 document.addEventListener('DOMContentLoaded', () => {
     obtenerTodosLosPokemons();
     mostrarFiltros();
-   
-    document.getElementById('cards').addEventListener('click', function (event) {
-        let target = event.target.closest('.card');
-        console.log(target);
-        if (target) {
-            let id = target.dataset.id;
-            detallesPokemon(id);
+
+    document.getElementById('cards').addEventListener('click', e => {
+        const card = e.target.closest('.card');
+        if (card) {
+            mostrarDetallesPokemon(card.dataset.id);
         }
     });
 });

@@ -3,6 +3,9 @@
     margin: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+body {
+    overflow-x: hidden;
+}
 
 #container {
     background-color: azure;
@@ -167,6 +170,7 @@
     left: 0;
     width: 100vw;
     height: 100vh;
+    background-color: rgba(0,0,0,0.4);
 }
 #estadistica{
     width: 800px;
@@ -184,14 +188,27 @@
     width: 50%;
     height: 70%;
 }
+
+#estadistica .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #333;
+}
+#estadistica .close-button:hover {
+    color: #000;
+}
 .descripcion{
-    display: flex;
-    justify-content: center;
     position: relative;
     top: 450px;
+    padding: 20px;
 }
 .azul{
-    width: 400px;
+    width: 430px;
     height: 250px;
     background-color: #38b6e0;
     position: relative;
@@ -200,40 +217,48 @@
     border-radius: 10%;
 }
 .altura{
-    
+    position: relative;
+    top: 20px;
     padding-left: 20px;
     padding-top: 20px;
 }
 .altura2{
     padding-left: 20px;
+    position: relative;
+    top: 20px;
 }
 
 .peso{
+    position: relative;
+    top: 100px;
     padding-top: 100px;
     padding-left: 20px;
 }
 .peso2{
+    position: relative;
+    top: 100px;
     padding-left: 20px;
 }
 .categoria{
     position: relative;
     left: 270px;
-    bottom: 190px;
+    bottom: 60px;
 }
 .categoria2{
     position: relative;
     left: 270px;
-    bottom: 190px;
+    bottom: 60px;
 }
 .habilidad{
     position: relative;
     left: 270px;
-    bottom: 90px;
+    top: 15px;
 }
 .habilidad2{
     position: relative;
     left: 270px;
-    bottom: 89px;
+    top: 15px;
+    font-size: 15px;
 }
 .cover {
     width: 600px;

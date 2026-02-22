@@ -107,24 +107,45 @@ async function mostrarDetallesPokemon(id) {
     estadistica.innerHTML = '';
     modal.classList.remove('hidden');
 
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✖';
+    closeBtn.className = 'close-button';
+    closeBtn.addEventListener('click', cerrarModal);
+    estadistica.appendChild(closeBtn);
+
+    const info = document.createElement('div');
+    info.className = 'azul';
+    
+
     const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`);
     const species = await speciesRes.json();
-
+    console.log(species);
     const texto = species.flavor_text_entries.find(t => t.language.name === 'es');
     if (texto) {
         const p = document.createElement('p');
+        p.className = 'descripcion';
         p.textContent = texto.flavor_text;
         estadistica.appendChild(p);
     }
 
     const pokeRes = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
     const poke = await pokeRes.json();
-
-    estadistica.innerHTML += `
-        <img src="${poke.sprites.front_default}">
-        <p>Altura: ${poke.height / 10} m</p>
-        <p>Peso: ${poke.weight / 10} kg</p>
+    console.log(poke);
+    const img = document.createElement('img');
+    img.src = poke.sprites.front_default;
+    img.className = 'cover';
+    estadistica.appendChild(img);
+    info.innerHTML += `
+        <strong class="altura">Altura:</strong>
+        <p class="altura2">${poke.height / 10} m</p>
+        <strong class="peso">Peso:</strong>
+        <p class="peso2">${poke.weight / 10} kg</p>
+        <strong class="categoria">Categoría:</strong>
+        <p class="categoria2">${species.genera[5].genus}</p>
+        <strong class="habilidad">Habilidad:</strong>
+        <p class="habilidad2">${poke.abilities.map(a => a.ability.name).join(', ')}</p>
     `;
+    estadistica.appendChild(info);
 }
 
 
@@ -138,4 +159,22 @@ document.addEventListener('DOMContentLoaded', () => {
             mostrarDetallesPokemon(card.dataset.id);
         }
     });
+
+    const modal = document.getElementById('modal');
+    modal.addEventListener('click', e => {
+        if (!e.target.closest('#estadistica')) {
+            cerrarModal();
+        }
+    });
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            cerrarModal();
+        }
+    });
 });
+
+function cerrarModal() {
+    const modal = document.getElementById('modal');
+    modal.classList.add('hidden');
+}
